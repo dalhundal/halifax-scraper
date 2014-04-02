@@ -1,7 +1,7 @@
 var fs = require('fs');
 var casper = require('casper').create({
 	clientScripts: [
-		'includes/moment.min.js',
+		'node_modules/moment/min/moment.min.js',
 		'includes/hfxUtil.js'
 	]
 });
