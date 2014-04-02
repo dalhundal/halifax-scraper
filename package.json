@@ -1,15 +1,16 @@
 {
-  "name": "hfx",
-  "version": "0.0.0",
-  "description": "Halifax account scraper",
+  "name": "halifax-scraper",
+  "version": "0.0.1",
+  "description": "Halifax Online Banking account scraper",
   "main": "hfx.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": "https://github.com/dalhundal/halifax-scraper.git",
   "author": "Dal Hundal",
-  "license": "ISC",
+  "license": "WTFPL",
   "dependencies": {
     "easy-table": "~0.3.0",
-    "moment": "^2.5.1"
+    "moment": "~2.5.1"
   }
 }
