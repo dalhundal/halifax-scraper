@@ -9,6 +9,6 @@
   "author": "Dal Hundal",
   "license": "ISC",
   "dependencies": {
-    "string-table": "^0.1.5"
+    "easy-table": "~0.3.0",
   }
 }
