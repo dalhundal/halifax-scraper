@@ -42,4 +42,7 @@ Plans for later
 
 Notes
 -----
+As this scrapes data from the Halifax Online Banking website, it is of course dependant on the format of their pages not changing. It works as of April 2014.
+
+
 Do whatever you want with this - just remember any hassle you get yourself into is your problem.
