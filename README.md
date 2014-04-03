@@ -40,6 +40,33 @@ Plans for later
 
 
 
+Sample Output
+-------------
+
+    Step 1: Halifax - Welcome to Online Banking
+    Step 2: Halifax - Enter Memorable Information
+    Step 3: Halifax - Personal Account Overview
+    Step 4: Halifax - View Product Details
+    
+    amount  card  name                type              when      
+    ------  ----  ------------------  ----------------  ----------
+    -4.49   1234  PRET/ LONDON GB     CHIP & PIN        2014-04-02
+    -4.94   1234  ABOKADO/ LONDON GB  CHIP & PIN        2014-04-02
+    
+    amount      balance     name          type          when
+    ----------  ----------  ------------  ------------  ----------
+    -20         1000        RESTAURANT    DEB           2014-04-01
+    -11.50      1020        NEWSAGENT     DEB           2014-04-01
+    -50         1031.50     LINK|LONDON   CPT           2014-04-01
+    
+    available : 1190.57
+    balance   : 1000
+    clear     : 990.57
+    overdraft : 200   
+    unclear   : 9.43  
+
+
+
 Notes
 -----
 As this scrapes data from the Halifax Online Banking website, it is of course dependant on the format of their pages not changing. It works as of April 2014.
