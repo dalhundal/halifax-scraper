@@ -73,7 +73,9 @@ casper.then(function getTransactions() {
 		this.wait(500,function waitForPendingTransactions() {
 			var transactions = this.evaluate(function evaluateTransactions() {
 				var trans = {complete:[],pending:[],summary:{}};
-				var pendingItems = document.querySelectorAll('#pendingTransactionsTable tbody tr');
+				var pendingItems = Array.prototype.filter.call(document.querySelectorAll('#pendingTransactionsTable tbody tr'),function(row) {
+					return (row.querySelectorAll('td,th').length == 5);
+				});
 				trans.pending = Array.prototype.map.call(pendingItems,function mapPendingItems(item) {
 					var cols = item.querySelectorAll('td,th');
 					return {
@@ -109,8 +111,6 @@ casper.then(function getTransactions() {
 				trans.summary.unclear = parseFloat((trans.summary.balance - (trans.summary.available - trans.summary.overdraft)).toFixed(2));
 				return trans;
 			});
-			//console.log(transactions);
-			//console.log(stringTable.create(transactions));
 			console.log(Table.printArray(transactions.pending));
 			console.log(Table.printArray(transactions.complete));
 			console.log(Table.printObj(transactions.summary));
