@@ -1,39 +1,93 @@
 var fs = require('fs');
+var moment = require('moment');
+
+var config = JSON.parse(fs.read('hfx.config.json'));
+
 var casper = require('casper').create({
 	clientScripts: [
 		'node_modules/moment/min/moment.min.js',
 		'includes/hfxUtil.js'
 	]
 });
-var Table = require('easy-table');
 
-var config = JSON.parse(fs.read('hfx.config.json'));
+// Log to file function, path of log file to be specified in config file
+function hfxLog() {
+	if (!config.log) return;
+	var msg = moment().format('[[]YYYY-MM-DD HH:mm:ss[] ]') + Array.prototype.splice.call(arguments,0).join(" ")+"\n";
+	fs.write(config.log,msg,'a');
+};
 
-// DESKTOP
+// Set user agent string to mimick a desktop Chrome browser
 casper.userAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.63 Safari/537.31');
 
-// Login
-casper.start('https://www.halifax-online.co.uk', function login() {
-	console.log("Step 1:",this.getTitle());
-	if (this.getTitle() != "Halifax - Welcome to Online Banking") throw "Step 1 - Title doesn't match";
-	this.fill('form[name="frmLogin"]',{
-		'frmLogin:strCustomerLogin_userID': config.username,
-		'frmLogin:strCustomerLogin_pwd': config.password
-	});
-	this.click('input[name="frmLogin:btnLogin1"]');
+// Catch exceptions, log to file
+casper.on('error',function(e) {
+	hfxLog("ERROR",e);
+});
+
+
+var data = {
+	login: {
+		url: 'https://www.halifax-online.co.uk',
+		title: 'Halifax - Welcome to Online Banking',
+		form: {
+			selector: 'form[name="frmLogin"]',
+			submit: 'input[name="frmLogin:btnLogin1"]',
+			input_username: 'frmLogin:strCustomerLogin_userID',
+			input_password: 'frmLogin:strCustomerLogin_pwd'
+		}
+	},
+	memorable: {
+		title: 'Halifax - Enter Memorable Information',
+		form: {
+			selector: 'form[name="frmentermemorableinformation1"]',
+			submit: 'input[name="frmentermemorableinformation1:btnContinue"]',
+			label_1: 'label[for="frmentermemorableinformation1:strEnterMemorableInformation_memInfo1"]',
+			input_1: 'frmentermemorableinformation1:strEnterMemorableInformation_memInfo1',
+			label_2: 'label[for="frmentermemorableinformation1:strEnterMemorableInformation_memInfo2"]',
+			input_2: 'frmentermemorableinformation1:strEnterMemorableInformation_memInfo2',
+			label_3: 'label[for="frmentermemorableinformation1:strEnterMemorableInformation_memInfo3"]',
+			input_3: 'frmentermemorableinformation1:strEnterMemorableInformation_memInfo3'
+		}
+	},
+	accountList: {
+		title: 'Halifax - Personal Account Overview',
+		link: 'a[name="lstAccLst:0:lkImageRetail1"]'
+	},
+	accountDetail: {
+		title: 'Halifax - View Product Details',
+		pendingLink: 'a[href="#show0"]',
+		pendingTable: '#pendingTransactionsTable',
+		pendingTableRow: '#pendingTransactionsTable tbody tr',
+		statementRow: '.statement tbody tr',
+		balance: '.accountBalance .balance',
+		available: '.accountBalance',
+		overdraft: '.accountBalance .accountMsg'
+	}
+}
+
+// Step 1 - Login with username and password
+casper.start(data.login.url, function login() {
+	hfxLog("Step 1:",this.getTitle());
+	if (this.getTitle() != data.login.title) throw "Step 1 - Title doesn't match";
+	var formData = {};
+	formData[data.login.form.input_username] = config.username;
+	formData[data.login.form.input_password] = config.password;
+	this.fill(data.login.form.selector,formData);
+	this.click(data.login.form.submit);
 	this.wait(500);
 });
 
 // Fill in memorable information
 casper.then(function fillInMemorableInformation() {
-	console.log('Step 2:',this.getTitle());
-	if (this.getTitle() != "Halifax - Enter Memorable Information") throw "Step 2 - Title doesn't match";
-	var challenge = this.evaluate(function evaluateMemorableInformationRequested(secret) {
+	hfxLog('Step 2:',this.getTitle());
+	if (this.getTitle() != data.memorable.title) throw "Step 2 - Title doesn't match";
+	var challenge = this.evaluate(function evaluateMemorableInformationRequested(data, secret) {
 		var challenge = {
 			request: [
-				parseInt(document.querySelector('label[for="frmentermemorableinformation1:strEnterMemorableInformation_memInfo1"]').innerText.replace(/[^0-9]/g,'')),
-				parseInt(document.querySelector('label[for="frmentermemorableinformation1:strEnterMemorableInformation_memInfo2"]').innerText.replace(/[^0-9]/g,'')),
-				parseInt(document.querySelector('label[for="frmentermemorableinformation1:strEnterMemorableInformation_memInfo3"]').innerText.replace(/[^0-9]/g,''))
+				parseInt(document.querySelector(data.memorable.form.label_1).innerText.replace(/[^0-9]/g,'')),
+				parseInt(document.querySelector(data.memorable.form.label_2).innerText.replace(/[^0-9]/g,'')),
+				parseInt(document.querySelector(data.memorable.form.label_3).innerText.replace(/[^0-9]/g,''))
 			]
 		};
 		challenge.response = [
@@ -47,33 +101,33 @@ casper.then(function fillInMemorableInformation() {
 			'&nbsp;'+challenge.response[2],
 		];
 		return challenge;
-	},config.memorable);
-	this.fill('form[name="frmentermemorableinformation1"]',{
-		'frmentermemorableinformation1:strEnterMemorableInformation_memInfo1': challenge.values[0],
-		'frmentermemorableinformation1:strEnterMemorableInformation_memInfo2': challenge.values[1],
-		'frmentermemorableinformation1:strEnterMemorableInformation_memInfo3': challenge.values[2]
-	});
-	this.click('input[name="frmentermemorableinformation1:btnContinue"]');
+	},data, config.memorable);
+	var formData = {};
+	formData[data.memorable.form.input_1] = challenge.values[0];
+	formData[data.memorable.form.input_2] = challenge.values[1];
+	formData[data.memorable.form.input_3] = challenge.values[2];
+	this.fill(data.memorable.form.selector,formData);
+	this.click(data.memorable.form.submit);
 	this.wait(500);
 });
 
 // Navigate to first account
 casper.then(function navigateToFirstAccount() {
-	console.log('Step 3:',this.getTitle());
-	if (this.getTitle() != "Halifax - Personal Account Overview") throw "Step 3 - Title doesn't match";
-	this.click('a[name="lstAccLst:0:lkImageRetail1"]');
+	hfxLog('Step 3:',this.getTitle());
+	if (this.getTitle() != data.accountList.title) throw "Step 3 - Title doesn't match";
+	this.click(data.accountList.link);
 });
 
 // Get transactions
 casper.then(function getTransactions() {
-	console.log('Step 4:',this.getTitle());
-	if (this.getTitle() != "Halifax - View Product Details") throw "Step 4 - Title doesn't match";
-	this.click('a[href="#show0"]');
-	this.waitForSelector('#pendingTransactionsTable',function clickPendingTransactions() {
+	hfxLog('Step 4:',this.getTitle());
+	if (this.getTitle() != data.accountDetail.title) throw "Step 4 - Title doesn't match";
+	this.click(data.accountDetail.pendingLink);
+	this.waitForSelector(data.accountDetail.pendingTable,function clickPendingTransactions() {
 		this.wait(500,function waitForPendingTransactions() {
-			var transactions = this.evaluate(function evaluateTransactions() {
+			var transactions = this.evaluate(function evaluateTransactions(data) {
 				var trans = {complete:[],pending:[],summary:{}};
-				var pendingItems = Array.prototype.filter.call(document.querySelectorAll('#pendingTransactionsTable tbody tr'),function(row) {
+				var pendingItems = Array.prototype.filter.call(document.querySelectorAll(data.accountDetail.pendingTableRow),function(row) {
 					return (row.querySelectorAll('td,th').length == 5);
 				});
 				trans.pending = Array.prototype.map.call(pendingItems,function mapPendingItems(item) {
@@ -87,7 +141,7 @@ casper.then(function getTransactions() {
 					};
 				});
 				//
-				var completeItems = document.querySelectorAll('.statement tbody tr');
+				var completeItems = document.querySelectorAll(data.accountDetail.statementRow);
 				trans.complete = Array.prototype.map.call(completeItems,function mapCompleteITems(item) {
 					var cols = item.querySelectorAll('td, th');
 					//
@@ -104,20 +158,19 @@ casper.then(function getTransactions() {
 					};
 				});
 				//
-				trans.summary.balance = hfxUtil.currency(document.querySelector('.accountBalance .balance'));
-				trans.summary.available=hfxUtil.currency(document.querySelector('.accountBalance').childNodes[4],true);
-				trans.summary.overdraft=hfxUtil.currency(document.querySelectorAll('.accountBalance .accountMsg')[1]);
+				trans.summary.balance = hfxUtil.currency(document.querySelector(data.accountDetail.balance));
+				trans.summary.available=hfxUtil.currency(document.querySelector(data.accountDetail.available).childNodes[4],true);
+				trans.summary.overdraft=hfxUtil.currency(document.querySelectorAll(data.accountDetail.overdraft)[1]);
 				trans.summary.clear = parseFloat((trans.summary.available - trans.summary.overdraft).toFixed(2));
 				trans.summary.unclear = parseFloat((trans.summary.balance - (trans.summary.available - trans.summary.overdraft)).toFixed(2));
 				return trans;
-			});
-			console.log(Table.printArray(transactions.pending));
-			console.log(Table.printArray(transactions.complete));
-			console.log(Table.printObj(transactions.summary));
+			},data);
+			console.log(JSON.stringify(transactions));
 		});
 	},function() {
 		console.log("AJAX FAILED");
 	});
 });
+
 
 casper.run();
