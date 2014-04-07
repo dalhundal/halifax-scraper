@@ -11,7 +11,7 @@ var casper = require('casper').create({
 
 var configDefaults = {
 	errorLock: 'hfx.error.tmp',
-	logFile: 'newloghfx.log.tmp'
+	logFile: 'hfx.log.tmp'
 };
 
 // Load in config file and merge with default config values
@@ -118,7 +118,7 @@ casper.then(function getTransactions() {
 	this.waitForSelector('#pendingTransactionsTable',function clickPendingTransactions() {
 		this.wait(500,function waitForPendingTransactions() {
 			var transactions = this.evaluate(function evaluateTransactions() {
-				var trans = {complete:[],pending:[],summary:{}};
+				var trans = {timestamp:+moment().format('X'),complete:[],pending:[],summary:{}};
 				var pendingItems = Array.prototype.filter.call(document.querySelectorAll('#pendingTransactionsTable tbody tr'),function(row) {
 					return (row.querySelectorAll('td,th').length == 5);
 				});
@@ -143,7 +143,7 @@ casper.then(function getTransactions() {
 					});
 					return {
 						when: hfxUtil.date(cols[0]),
-						name: description.join('|'),
+						name: description,
 						type: hfxUtil.text(cols[2]),
 						amount: amount,
 						balance: hfxUtil.currency(cols[5])
@@ -153,8 +153,8 @@ casper.then(function getTransactions() {
 				trans.summary.balance = hfxUtil.currency(document.querySelector('.accountBalance .balance'));
 				trans.summary.available=hfxUtil.currency(document.querySelector('.accountBalance').childNodes[4],true);
 				trans.summary.overdraft=hfxUtil.currency(document.querySelectorAll('.accountBalance .accountMsg')[1]);
-				trans.summary.clear = parseFloat((trans.summary.available - trans.summary.overdraft).toFixed(2));
-				trans.summary.unclear = parseFloat((trans.summary.balance - (trans.summary.available - trans.summary.overdraft)).toFixed(2));
+				trans.summary.clearBalance = parseFloat((trans.summary.available - trans.summary.overdraft).toFixed(2));
+				trans.summary.pending = parseFloat((trans.summary.balance - (trans.summary.available - trans.summary.overdraft)).toFixed(2));
 				return trans;
 			});
 			writeLog(transactions.pending.length,"pending transactions.",transactions.complete.length,"complete transactions");
