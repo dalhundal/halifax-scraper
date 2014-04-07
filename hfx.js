@@ -11,7 +11,11 @@ var casper = require('casper').create({
 
 var configFile = 'hfx.config.json';
 if (!fs.isFile(configFile) || !fs.isReadable(configFile)) throw "Could not read config file: "+configFile;
-var config = JSON.parse(fs.read(configFile));
+try {
+	var config = JSON.parse(fs.read(configFile));
+} catch (e) {
+	throw "Failed to parse JSON config file";
+};
 
 // Refuse to run if error file exists. This is to prevent multiple failed attempts which could lock the account
 if (fs.isFile(config.error)) throw "Aborting. Last run produced an error - see error log for details";
