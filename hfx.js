@@ -1,7 +1,6 @@
 var fs = require('fs');
 var moment = require('moment');
-
-var config = JSON.parse(fs.read('hfx.config.json'));
+var underscore = require('underscore');
 
 var casper = require('casper').create({
 	clientScripts: [
@@ -9,6 +8,13 @@ var casper = require('casper').create({
 		'includes/hfxUtil.js'
 	]
 });
+
+var configFile = 'hfx.config.json';
+if (!fs.isFile(configFile) || !fs.isReadable(configFile)) throw "Could not read config file: "+configFile;
+var config = JSON.parse(fs.read(configFile));
+
+// Refuse to run if error file exists. This is to prevent multiple failed attempts which could lock the account
+if (fs.isFile(config.error)) throw "Aborting. Last run produced an error - see error log for details";
 
 // Log to file function, path of log file to be specified in config file
 function writeLog() {
@@ -21,7 +27,9 @@ function writeLogError() {
 	var args = Array.prototype.splice.call(arguments,0);
 	args.unshift('[ERROR]');
 	writeLog.apply(null,args);
-}
+	fs.write(config.error,args.join(" "),'w');
+	casper.exit();
+};
 
 casper.on('error',writeLogError);
 
@@ -32,7 +40,6 @@ function assertTitle(title) {
 		writeLog("Page title:",casper.getTitle());
 	};
 };
-
 
 // Set user agent string to mimick a desktop Chrome browser
 casper.userAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.63 Safari/537.31');
@@ -82,13 +89,13 @@ casper.then(function fillInMemorableInformation() {
 	this.wait(500);
 });
 
-// Navigate to first account
+// Step 3 - Navigate to first account
 casper.then(function navigateToFirstAccount() {
 	assertTitle('Halifax - Personal Account Overview');
 	this.click('a[name="lstAccLst:0:lkImageRetail1"]');
 });
 
-// Get transactions
+// Step 4 - Get transactions
 casper.then(function getTransactions() {
 	assertTitle('Halifax - View Product Details');
 	this.click('a[href="#show0"]');
@@ -141,6 +148,5 @@ casper.then(function getTransactions() {
 		writeLogError("Failed to load pending transactions");
 	});
 });
-
 
 casper.run();
