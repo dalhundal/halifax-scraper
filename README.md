@@ -34,36 +34,51 @@ Nothing more than that.
 
 
 
-Plans for later
----------------
-1. Have it spit out nice JSON.
+Logging
+-------
+
+By default, the script will output log data to a file named *'hfx.log.tmp'* in the current directory.
+If an error is encountered, it will also write a file named *'hfx.error.tmp'* in the current directory.
+
+The location of both of these files can be overridden in the config file if desired - but you need to make sure that the location you specify for them is writeable - right now the script doesn't check that.
+
+When the script is run, it check to see if the error-log file exists - if it does, the script will not continue. This is done as a safeguard to prevent multiple successive failed login's which may result in your online banking account being locked. You should review the error that was logged and if you're happy for the script to run, delete the error-log file.
 
 
 
 Sample Output
 -------------
 
-    Step 1: Halifax - Welcome to Online Banking
-    Step 2: Halifax - Enter Memorable Information
-    Step 3: Halifax - Personal Account Overview
-    Step 4: Halifax - View Product Details
-    
-    amount  card  name                type              when      
-    ------  ----  ------------------  ----------------  ----------
-    -4.49   1234  PRET/ LONDON GB     CHIP & PIN        2014-04-02
-    -4.94   1234  ABOKADO/ LONDON GB  CHIP & PIN        2014-04-02
-    
-    amount      balance     name          type          when
-    ----------  ----------  ------------  ------------  ----------
-    -20         1000        RESTAURANT    DEB           2014-04-01
-    -11.50      1020        NEWSAGENT     DEB           2014-04-01
-    -50         1031.50     LINK|LONDON   CPT           2014-04-01
-    
-    available : 1190.57
-    balance   : 1000
-    clear     : 990.57
-    overdraft : 200   
-    unclear   : 9.43  
+    {
+        timestamp: 123234234234,
+        summary: {
+            available: 1200.25,
+            balance: 1000.25,
+            clearBalance: 980.25,
+            overdraft: 200,
+            pending: 20
+        },
+        pending: [
+            {
+                amount: 20,
+                card: 1234,
+                name: 'A Restaurant',
+                type: 'CHIP AND PIN',
+                when: '2014-04-01'
+            },
+            {...}
+        ],
+        complete: [
+            {
+                amount: -10.50,
+                balance: 1000.25,
+                name: ['Newsagent','CD 1234','London'],
+                type: 'DEB',
+                when: '2014-04-01'
+            },
+            {...}
+        ]
+    }
 
 
 
