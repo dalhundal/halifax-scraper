@@ -1,6 +1,6 @@
 var fs = require('fs');
 var moment = require('moment');
-var underscore = require('underscore');
+var _ = require('underscore');
 
 var casper = require('casper').create({
 	clientScripts: [
@@ -9,6 +9,12 @@ var casper = require('casper').create({
 	]
 });
 
+var configDefaults = {
+	errorLock: 'hfx.error.tmp',
+	logFile: 'newloghfx.log.tmp'
+};
+
+// Load in config file and merge with default config values
 var configFile = 'hfx.config.json';
 if (!fs.isFile(configFile) || !fs.isReadable(configFile)) throw "Could not read config file: "+configFile;
 try {
@@ -16,22 +22,28 @@ try {
 } catch (e) {
 	throw "Failed to parse JSON config file";
 };
+_.defaults(config,configDefaults);
+
+// Make sure that username, password and memorable information are set
+if (!_.isString(config.username)) throw "Username not set";
+if (!_.isString(config.password)) throw "Password not set";
+if (!_.isString(config.memorable)) throw "Memorable information not set";
 
 // Refuse to run if error file exists. This is to prevent multiple failed attempts which could lock the account
-if (fs.isFile(config.error)) throw "Aborting. Last run produced an error - see error log for details";
+if (fs.isFile(config.errorLock)) throw "Aborting. Last run produced an error - see error log for details";
 
 // Log to file function, path of log file to be specified in config file
 function writeLog() {
-	if (!config.log) return;
+	if (!config.logFile) return;
 	var msg = moment().format('[[]YYYY-MM-DD HH:mm:ss[] ]') + Array.prototype.splice.call(arguments,0).join(" ")+"\n";
-	fs.write(config.log,msg,'a');
+	fs.write(config.logFile,msg,'a');
 };
 
 function writeLogError() {
 	var args = Array.prototype.splice.call(arguments,0);
 	args.unshift('[ERROR]');
 	writeLog.apply(null,args);
-	fs.write(config.error,args.join(" "),'w');
+	fs.write(config.errorLock,args.join(" "),'w');
 	casper.exit();
 };
 
